@@ -1,9 +1,12 @@
 defmodule Utils do
   def short_date(date) do
-    # current_date_time
+    date_in_iso8601(date)
+    |> String.slice(0, 8)
   end
-  
-  def date_iso8601(date) do
-    date |> DateTime.truncate(:seconds) |> DateTime.to_iso8601
+
+  def date_in_iso8601(date) do
+    iso_date = date |> DateTime.truncate(:second)  |> DateTime.to_iso8601()
+    iso_date = String.replace(iso_date, "-", "")
+    String.replace(iso_date, ":", "")
   end
 end
