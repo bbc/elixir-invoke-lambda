@@ -10,8 +10,8 @@ defmodule LambdaInvoke do
   end
 
   defp lambda_url(lambda_arn) do
-    # host = "https://lambda.eu-west-1.amazonaws.com"
-    host = "http://localhost:3000"
+    host = "https://lambda.eu-west-1.amazonaws.com"
+    # host = "http://localhost:3000"
     path = "/2015-03-31/functions/#{lambda_arn}/invocations"
 
     host <> uri_encoded_path(path)

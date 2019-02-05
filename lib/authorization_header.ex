@@ -1,15 +1,17 @@
 defmodule AuthorizationHeader do
   def build(invoke_lambda_url, headers, date) do
 
-    string_to_sign = string_to_sign(
+    req_string_to_sign = string_to_sign(
       date,
       canonical_request(invoke_lambda_url, headers)
     )
 
+    IO.puts req_string_to_sign
+
     [
       "AWS4-HMAC-SHA256 Credential=#{credential(date)}",
       "SignedHeaders=#{signed_headers()}",
-      "Signature=#{signature(date, string_to_sign)}",
+      "Signature=#{signature(date, req_string_to_sign)}",
     ]
     |> Enum.join ", "
   end
@@ -31,7 +33,7 @@ defmodule AuthorizationHeader do
 
   # https://github.com/aws/aws-sdk-ruby/blob/master/gems/aws-sigv4/lib/aws-sigv4/signer.rb#L391
   defp signature(date, string_to_sign) do
-    k_date = Crypto.hmac("AWS4" <> Config.aws_secret_key(), Utils.date_in_iso8601(date))
+    k_date = Crypto.hmac("AWS4" <> Config.aws_secret_key(), Utils.short_date(date))
     k_region = Crypto.hmac(k_date, Config.region())
     k_service = Crypto.hmac(k_region, Config.service())
     k_credentials = Crypto.hmac(k_service, "aws4_request")
@@ -53,7 +55,7 @@ defmodule AuthorizationHeader do
 
   defp canonical_headers(headers) do
     Map.keys(headers)
-    |> Enum.map(fn header_key -> "#{header_key}:#{headers.get(header_key)}" end)
+    |> Enum.map(fn header_key -> String.downcase("#{header_key}:#{headers.get(header_key)}") end)
     |> Enum.join("\n")
   end
 
@@ -64,7 +66,7 @@ defmodule AuthorizationHeader do
       Config.service(),
       "aws4_request"
     ]
-    |> Enum.join "/"
+    |> Enum.join("/")
   end
 
   defp credential(date) do
