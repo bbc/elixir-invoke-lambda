@@ -1,9 +1,9 @@
-defmodule LambdaInvoke.MixProject do
+defmodule InvokeLambda.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :lambda_invoke,
+      app: :invoke_lambda,
       version: "0.1.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,

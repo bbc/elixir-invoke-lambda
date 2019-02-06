@@ -1,4 +1,4 @@
-defmodule Crypto do
+defmodule InvokeLambda.Crypto do
   def hmac(key, value) do
     :crypto.hmac(:sha256, key, value)
   end
