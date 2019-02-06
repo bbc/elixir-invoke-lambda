@@ -1,7 +1,7 @@
-{application,lambda_invoke,
+{application,invoke_lambda,
              [{applications,[kernel,stdlib,elixir,logger,httpoison]},
-              {description,"lambda_invoke"},
+              {description,"invoke_lambda"},
               {modules,['Elixir.Crypto','Elixir.LambdaAuth',
-                        'Elixir.LambdaInvoke']},
+                        'Elixir.InvokeLambda']},
               {registered,[]},
               {vsn,"0.1.0"}]}.
