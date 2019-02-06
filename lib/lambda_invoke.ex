@@ -1,18 +1,16 @@
 defmodule LambdaInvoke do
-  def invoke(lambda_arn) do
-    invoke_lambda_url = lambda_url(lambda_arn)
+  def invoke(function_name) do
+    invoke_lambda_url = lambda_url(function_name)
     req_headers = headers(invoke_lambda_url)
-    IO.inspect req_headers
 
     response = HTTPoison.post(invoke_lambda_url, "", req_headers)
 
     response
   end
 
-  defp lambda_url(lambda_arn) do
+  defp lambda_url(function_name) do
     host = "https://lambda.eu-west-1.amazonaws.com"
-    # host = "http://localhost:3000"
-    path = "/2015-03-31/functions/#{lambda_arn}/invocations"
+    path = "/2015-03-31/functions/#{function_name}/invocations"
 
     host <> uri_encoded_path(path)
   end
@@ -30,7 +28,7 @@ defmodule LambdaInvoke do
 
     base_headers = Map.new
 
-    base_headers
+    base_headers = base_headers
     |> Map.put("host", parsed_uri.host)
     |> Map.put("x-amz-date", Utils.date_in_iso8601(date))
 
@@ -38,6 +36,7 @@ defmodule LambdaInvoke do
     
     [
       {"content-type", "application/json"},
+      {"accept-encoding", "identity"},
       {"host",  parsed_uri.host},
       {"x-amz-date", Utils.date_in_iso8601(date)},
       {"authorization", authorization}

@@ -1,19 +1,19 @@
 defmodule AuthorizationHeader do
   def build(invoke_lambda_url, headers, date) do
+    IO.puts "build headers"
+    IO.inspect headers
 
-    req_string_to_sign = string_to_sign(
+    string_to_sign = string_to_sign(
       date,
       canonical_request(invoke_lambda_url, headers)
     )
 
-    IO.puts req_string_to_sign
-
     [
       "AWS4-HMAC-SHA256 Credential=#{credential(date)}",
       "SignedHeaders=#{signed_headers()}",
-      "Signature=#{signature(date, req_string_to_sign)}",
+      "Signature=#{signature(date, string_to_sign)}",
     ]
-    |> Enum.join ", "
+    |> Enum.join(", ")
   end
 
   defp signed_headers do
@@ -21,7 +21,7 @@ defmodule AuthorizationHeader do
   end
 
   # https://github.com/aws/aws-sdk-ruby/blob/master/gems/aws-sigv4/lib/aws-sigv4/signer.rb#L369
-  defp string_to_sign(date, canonical_request) do
+  def string_to_sign(date, canonical_request) do
     [
       "AWS4-HMAC-SHA256",
       Utils.date_in_iso8601(date),
@@ -31,35 +31,52 @@ defmodule AuthorizationHeader do
     |> Enum.join("\n")
   end
 
-  # https://github.com/aws/aws-sdk-ruby/blob/master/gems/aws-sigv4/lib/aws-sigv4/signer.rb#L391
-  defp signature(date, string_to_sign) do
-    k_date = Crypto.hmac("AWS4" <> Config.aws_secret_key(), Utils.short_date(date))
-    k_region = Crypto.hmac(k_date, Config.region())
-    k_service = Crypto.hmac(k_region, Config.service())
-    k_credentials = Crypto.hmac(k_service, "aws4_request")
-    Crypto.hmac(k_credentials, string_to_sign) |> Crypto.hex
+  defp content_sha256 do
+    Crypto.sha256("") |> Crypto.hex
   end
 
-  defp canonical_request(invoke_lambda_url, headers) do
+  # https://github.com/aws/aws-sdk-ruby/blob/master/gems/aws-sigv4/lib/aws-sigv4/signer.rb#L391
+  defp signature(date, string_to_sign) do
+    Crypto.hmac(
+      signing_key(date), 
+      string_to_sign
+    ) |> Crypto.hex
+  end
+
+  def signing_key(date) do
+    "AWS4" <> Config.aws_secret_key()
+    |> Crypto.hmac(Utils.short_date(date))
+    |> Crypto.hmac(Config.region())
+    |> Crypto.hmac(Config.service())
+    |> Crypto.hmac("aws4_request")
+  end
+
+  def canonical_request(invoke_lambda_url, headers) do
     parsed_uri = URI.parse(invoke_lambda_url)
+
     [
       "POST",
       parsed_uri.path,
-      parsed_uri.query || '',
-      canonical_headers(headers) <> "\n",
+      '', # parsed_uri.query
+      canonical_headers(headers),
       signed_headers(),
-      # content_sha256,
+      content_sha256(),
     ]
     |> Enum.join("\n")
   end
 
-  defp canonical_headers(headers) do
-    Map.keys(headers)
-    |> Enum.map(fn header_key -> String.downcase("#{header_key}:#{headers.get(header_key)}") end)
-    |> Enum.join("\n")
+  def canonical_headers(headers) when is_map(headers) do
+    canon_headers = headers |> Enum.map(fn {header_name, header_value} -> 
+      header_name = header_name |> String.downcase |> String.trim
+      header_value = header_value |> String.trim
+
+      header_name <> ":" <> header_value <> "\n"
+    end)
+
+    canon_headers |> Enum.join("")
   end
 
-  defp credential_scope(date) do
+  def credential_scope(date) do
     [
       Utils.short_date(date),
       Config.region(),

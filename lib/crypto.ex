@@ -8,6 +8,6 @@ defmodule Crypto do
   end
 
   def hex(string) do
-    string |> Base.encode16
+    string |> Base.encode16(case: :lower)
   end
 end
