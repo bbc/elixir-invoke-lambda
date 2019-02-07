@@ -1,10 +1,10 @@
 defmodule InvokeLambda do
 
-  alias InvokeLambda.{AuthorizationHeader, Utils}
+  alias InvokeLambda.{AuthorizationHeader, Utils, CredentialStore}
 
   @aws_endpoint_version "2015-03-31"
 
-  def invoke(function_name, options \\ %{}) do
+  def invoke(function_name, %{role: _} = options) do
     params = build_params(function_name, options)
 
     HTTPoison.post(
@@ -17,6 +17,7 @@ defmodule InvokeLambda do
   def build_params(function_name, options) do
     %{region: "eu-west-1", function_name: function_name, service: "lambda"} 
     |> Map.merge(options)
+    |> add_credentials
     |> put_date
     |> put_invoke_lambda_url
     |> put_headers
@@ -29,19 +30,36 @@ defmodule InvokeLambda do
   end
 
   defp put_date(params), do: Map.put(params, :date, DateTime.utc_now)
+
   defp put_headers(params), do: Map.put(params, :headers, build_headers(params))
 
-  defp build_headers(params) do
-    parsed_uri = URI.parse(params.invoke_lambda_url)
-    [
-      {"host",  parsed_uri.host},
-      {"x-amz-date", Utils.date_in_iso8601(params.date)},
-      ]
-    |> add_auth_header(params)
+  defp add_credentials(params) do
+    case CredentialStore.retrieve_for_role(params.role) do
+      {:ok, credentials} -> Map.put(params, :credentials, credentials)
+      {:error, error} -> raise error
+    end
   end
 
-  defp add_auth_header(headers, params) do
-    authorization = AuthorizationHeader.build(params, headers)
-    headers ++ [{"authorization", authorization}]
+  defp build_headers(params) do
+    params
+      |> build_base_headers
+      |> add_auth_headers(params)
+  end
+
+  defp build_base_headers(params) do
+    parsed_uri = URI.parse(params.invoke_lambda_url)
+
+    [
+      {"host",  parsed_uri.host},
+      {"x-amz-date", Utils.date_in_iso8601(params.date)}
+    ]
+  end
+
+  defp add_auth_headers(base_headers, params) do
+    authorization = AuthorizationHeader.build(params, base_headers)
+    base_headers ++ [
+      {"authorization", authorization},
+      {"x-amz-security-token", params.credentials.aws_token}
+    ]
   end
 end

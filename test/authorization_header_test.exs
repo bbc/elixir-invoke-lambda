@@ -1,10 +1,11 @@
 defmodule AuthorizationHeaderTest do
 
-  alias InvokeLambda.{AuthorizationHeader, Config, Utils, Crypto}
+  alias InvokeLambda.{AuthorizationHeader, Utils, Crypto}
 
   use ExUnit.Case
 
-  import Mock
+  @credentials TestHelper.example_credentials
+  @role TestHelper.example_role_name
 
   def example_headers do
     [
@@ -69,16 +70,20 @@ defmodule AuthorizationHeaderTest do
   end
 
   test "signing_key/1" do
-    with_mock Config, [
-      aws_secret_key: fn -> "secret-access-key" end
-    ] do
-      {:ok, date, _} = DateTime.from_iso8601 "2015-03-26T08:43:09.961127Z"
-      expected =  <<244, 225, 119, 75, 253, 57, 203, 17, 224, 217, 134, 83, 15, 42,
-      180, 4, 254, 5, 107, 232, 23, 122, 68, 204, 248, 146, 206, 86, 9,
-      85, 17, 229>>
+    {:ok, date, _} = DateTime.from_iso8601 "2015-03-26T08:43:09.961127Z"
+    params = %{
+      credentials: @credentials, 
+      role: @role, 
+      date: date, 
+      region: "eu-west-1", 
+      service: "lambda"
+    }
 
-      actual = AuthorizationHeader.signing_key(%{date: date, region: "eu-west-1", service: "lambda"})
-      assert expected == actual
-    end
+    expected =  <<244, 225, 119, 75, 253, 57, 203, 17, 224, 217, 134, 83, 15, 42,
+    180, 4, 254, 5, 107, 232, 23, 122, 68, 204, 248, 146, 206, 86, 9,
+    85, 17, 229>>
+    
+    actual = AuthorizationHeader.signing_key(params)
+    assert expected == actual
   end
 end

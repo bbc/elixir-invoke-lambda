@@ -1,6 +1,6 @@
 defmodule InvokeLambda.AuthorizationHeader do
 
-  alias InvokeLambda.{Crypto, Utils, Config}
+  alias InvokeLambda.{Crypto, Utils}
 
   @signable_headers ["host", "x-amz-date"]
 
@@ -44,7 +44,7 @@ defmodule InvokeLambda.AuthorizationHeader do
   end
 
   def signing_key(params) do
-    "AWS4" <> Config.aws_secret_key()
+    "AWS4" <> params.credentials.aws_secret_key
       |> Crypto.hmac(Utils.short_date(params.date))
       |> Crypto.hmac(params.region)
       |> Crypto.hmac(params.service)
@@ -95,6 +95,6 @@ defmodule InvokeLambda.AuthorizationHeader do
   end
 
   defp credential(params) do
-    "#{Config.aws_access_key()}/#{credential_scope(params)}"
+    "#{params.credentials.aws_access_key}/#{credential_scope(params)}"
   end
 end
