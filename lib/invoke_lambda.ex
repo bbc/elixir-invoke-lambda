@@ -41,10 +41,8 @@ defmodule InvokeLambda do
   defp put_headers(params), do: Map.put(params, :headers, build_headers(params))
 
   defp put_credentials(params) do
-    case CredentialStore.retrieve_for_role(params.role) do
-      {:ok, credentials} -> Map.put(params, :credentials, credentials)
-      {:error, error} -> raise error
-    end
+    credentials = CredentialStore.retrieve_for_role(params.role)
+    Map.put(params, :credentials, credentials)
   end
 
   defp build_headers(params) do
