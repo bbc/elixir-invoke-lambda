@@ -1,20 +1,19 @@
 defmodule InvokeLambda.AuthorizationHeader do
 
-  alias InvokeLambda.{Crypto, Utils, Config}
+  alias InvokeLambda.{Crypto, Utils}
 
   @signable_headers ["host", "x-amz-date"]
 
-  def build(region, invoke_lambda_url, headers, date) do
+  def build(params, other_headers) do
     string_to_sign = string_to_sign(
-      region,  
-      date,
-      canonical_request(invoke_lambda_url, headers)
+      params,
+      canonical_request(params, other_headers)
     )
 
     [
-      "AWS4-HMAC-SHA256 Credential=#{credential(date, region)}",
+      "AWS4-HMAC-SHA256 Credential=#{credential(params)}",
       "SignedHeaders=#{signed_headers()}",
-      "Signature=#{signature(region, date, string_to_sign)}",
+      "Signature=#{signature(params, string_to_sign)}",
     ]
       |> Enum.join(", ")
   end
@@ -23,11 +22,11 @@ defmodule InvokeLambda.AuthorizationHeader do
     @signable_headers |> Enum.join ";"
   end
 
-  def string_to_sign(region, date, canonical_request) do
+  def string_to_sign(params, canonical_request) do
     [
       "AWS4-HMAC-SHA256",
-      Utils.date_in_iso8601(date),
-      credential_scope(date, region),
+      Utils.date_in_iso8601(params.date),
+      credential_scope(params),
       Crypto.sha256(canonical_request) |> Crypto.hex
     ]
       |> Enum.join("\n")
@@ -37,37 +36,37 @@ defmodule InvokeLambda.AuthorizationHeader do
     InvokeLambda.post_body |> Crypto.sha256 |> Crypto.hex
   end
 
-  defp signature(region, date, string_to_sign) do
-    date
-      |> signing_key(region)
+  defp signature(params, string_to_sign) do
+      params
+      |> signing_key
       |> Crypto.hmac(string_to_sign) 
       |> Crypto.hex
   end
 
-  def signing_key(date, region) do
-    "AWS4" <> Config.aws_secret_key()
-      |> Crypto.hmac(Utils.short_date(date))
-      |> Crypto.hmac(region)
-      |> Crypto.hmac(InvokeLambda.service)
+  def signing_key(params) do
+    "AWS4" <> params.credentials.aws_secret_key
+      |> Crypto.hmac(Utils.short_date(params.date))
+      |> Crypto.hmac(params.region)
+      |> Crypto.hmac(params.service)
       |> Crypto.hmac("aws4_request")
   end
 
-  def canonical_request(invoke_lambda_url, headers) do
-    parsed_uri = URI.parse(invoke_lambda_url)
+  def canonical_request(params, other_headers) do
+    parsed_uri = URI.parse(params.invoke_lambda_url)
 
     [
       "POST",
       parsed_uri.path,
       parsed_uri.query || '',
-      canonical_headers(headers),
+      canonical_headers(other_headers),
       signed_headers(),
       content_sha256(),
     ]
       |> Enum.join("\n")
   end
 
-  def canonical_headers(headers) when is_list(headers) do
-    headers 
+  def canonical_headers(other_headers) when is_list(other_headers) do
+    other_headers 
       |> Enum.filter(&is_canonical_header?/1)
       |> Enum.map(&canonical_header/1)
       |> Enum.join("")
@@ -85,17 +84,17 @@ defmodule InvokeLambda.AuthorizationHeader do
     header_name <> ":" <> header_value <> "\n"
   end
 
-  def credential_scope(date, region) do
+  def credential_scope(params) do
     [
-      Utils.short_date(date),
-      region,
-      InvokeLambda.service,
+      Utils.short_date(params.date),
+      params.region,
+      params.service,
       "aws4_request"
     ]
       |> Enum.join("/")
   end
 
-  defp credential(date, region) do
-    "#{Config.aws_access_key()}/#{credential_scope(date, region)}"
+  defp credential(params) do
+    "#{params.credentials.aws_access_key}/#{credential_scope(params)}"
   end
 end
