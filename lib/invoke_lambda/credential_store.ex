@@ -1,13 +1,9 @@
 defmodule InvokeLambda.CredentialStore do
   def retrieve_for_role(role) do
-    try do
-      role
-      |> meta_data_endpoint
-      |> HTTPoison.get!()
-      |> format_response
-    rescue
-      error -> {:error, error}
-    end
+    role
+    |> meta_data_endpoint
+    |> HTTPoison.get!()
+    |> format_response
   end
 
   defp format_response(response) do
@@ -17,13 +13,10 @@ defmodule InvokeLambda.CredentialStore do
   end
 
   defp standardise_keys(decoded_response_body) do
-    {
-      :ok,
-      %{
-        aws_access_key: decoded_response_body["AccessKeyId"],
-        aws_secret_key: decoded_response_body["SecretAccessKey"],
-        aws_token: decoded_response_body["Token"]
-      }
+    %{
+      aws_access_key: decoded_response_body["AccessKeyId"],
+      aws_secret_key: decoded_response_body["SecretAccessKey"],
+      aws_token: decoded_response_body["Token"]
     }
   end
 
