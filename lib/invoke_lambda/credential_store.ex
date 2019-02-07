@@ -1,10 +1,9 @@
 defmodule InvokeLambda.CredentialStore do
-
   def retrieve_for_role(role) do
     try do
       role
       |> meta_data_endpoint
-      |> HTTPoison.get!
+      |> HTTPoison.get!()
       |> format_response
     rescue
       error -> {:error, error}
@@ -13,11 +12,11 @@ defmodule InvokeLambda.CredentialStore do
 
   defp format_response(response) do
     response.body
-    |> Poison.decode!
+    |> Poison.decode!()
     |> standardise_keys
   end
 
-  defp standardise_keys(decoded_response_body) do 
+  defp standardise_keys(decoded_response_body) do
     {
       :ok,
       %{
