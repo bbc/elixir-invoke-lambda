@@ -35,10 +35,7 @@ defmodule InvokeLambda do
   end
 
   def encode_function_payload(params) do
-    params
-    |> Map.update!(:function_payload, fn current_value ->
-      Poison.encode!(current_value)
-    end)
+    %{params | function_payload: Poison.encode!(params.function_payload) }
   end
 
   def put_invoke_function_url(params) do
