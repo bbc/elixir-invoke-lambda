@@ -1,6 +1,6 @@
 defmodule InvokeLambda.CredentialStore do
-  def retrieve_for_role(role) do
-    role
+  def retrieve_using_role(params) do
+    params
     |> meta_data_endpoint
     |> HTTPoison.get!()
     |> format_response
@@ -20,7 +20,7 @@ defmodule InvokeLambda.CredentialStore do
     }
   end
 
-  defp meta_data_endpoint(role) do
-    "http://169.254.169.254/latest/meta-data/iam/security-credentials/#{role}"
+  defp meta_data_endpoint(params) do
+    "#{params.meta_data_host}/latest/meta-data/iam/security-credentials/#{params.role}"
   end
 end
