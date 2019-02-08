@@ -32,8 +32,8 @@ defmodule InvokeLambda.AuthorizationHeader do
     |> Enum.join("\n")
   end
 
-  defp content_sha256 do
-    InvokeLambda.post_body() |> Crypto.sha256() |> Crypto.hex()
+  defp content_sha256(params) do
+    params.function_payload |> Crypto.sha256() |> Crypto.hex()
   end
 
   defp signature(params, string_to_sign) do
@@ -60,7 +60,7 @@ defmodule InvokeLambda.AuthorizationHeader do
       parsed_uri.query || '',
       canonical_headers(other_headers),
       signed_headers(),
-      content_sha256()
+      content_sha256(params)
     ]
     |> Enum.join("\n")
   end

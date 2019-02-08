@@ -37,12 +37,17 @@ defmodule AuthorizationHeaderTest do
           "x-amz-date:20150325T105958Z",
           "",
           "host;x-amz-date",
-          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
         ],
         "\n"
       )
 
-    params = %{invoke_lambda_url: "https://example.com/", service: "lambda"}
+    params = %{
+      invoke_lambda_url: "https://example.com/",
+      service: "lambda",
+      function_payload: "{}"
+    }
+
     actual = AuthorizationHeader.canonical_request(params, example_headers())
 
     assert expected == actual
@@ -59,7 +64,15 @@ defmodule AuthorizationHeaderTest do
   test "string_to_sign/2" do
     {:ok, date, _} = DateTime.from_iso8601("2019-02-06T08:43:09.961127Z")
     long_date = Utils.date_in_iso8601(date)
-    params = %{date: date, region: "eu-west-1", service: "lambda"}
+
+    params = %{
+      date: date,
+      region: "eu-west-1",
+      service: "lambda",
+      function_payload: "{}",
+      invoke_lambda_url:
+        "https://lambda.eu-west-1.amazonaws.com/2015-03-31/functions/ingress-hello-world/invocations"
+    }
 
     headers = [
       {"Host", "example.com"},
@@ -68,11 +81,7 @@ defmodule AuthorizationHeaderTest do
 
     credential_scope = "20190206/eu-west-1/lambda/aws4_request"
 
-    invoke_lambda_url =
-      "https://lambda.eu-west-1.amazonaws.com/2015-03-31/functions/ingress-hello-world/invocations"
-
-    canonical_request =
-      AuthorizationHeader.canonical_request(%{invoke_lambda_url: invoke_lambda_url}, headers)
+    canonical_request = AuthorizationHeader.canonical_request(params, headers)
 
     hashed_canonical_request = Crypto.sha256(canonical_request) |> Crypto.hex()
 
@@ -92,7 +101,8 @@ defmodule AuthorizationHeaderTest do
       role: @role,
       date: date,
       region: "eu-west-1",
-      service: "lambda"
+      service: "lambda",
+      function_payload: "{}"
     }
 
     expected =

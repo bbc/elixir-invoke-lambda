@@ -11,7 +11,8 @@ defmodule CredentialStoreTest do
     with_mocks([
       {HTTPoison, [], [get!: fn _ -> TestHelper.expected_meta_data_response() end]}
     ]) do
-      result = CredentialStore.retrieve_using_role(%{role: @role, meta_data_host: @meta_data_host})
+      result =
+        CredentialStore.retrieve_using_role(%{role: @role, meta_data_host: @meta_data_host})
 
       expected_result = %{
         aws_access_key: "aws-access-key",

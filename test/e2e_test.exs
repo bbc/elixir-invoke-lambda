@@ -8,11 +8,12 @@ defmodule E2eTest do
   @function_name TestHelper.example_function_name()
   @invocation_result TestHelper.example_invocation_result()
   @expected_invocation_url TestHelper.expected_invocation_url(@function_name)
-  @expected_body ""
+  @expected_body "{}"
   @role TestHelper.example_role_name()
   @expected_meta_data_url TestHelper.expected_meta_data_url(@role)
   @options %{role: @role}
   @expected_invoke_headers [
+    {"content-type", "application/json"},
     {"host", "lambda.eu-west-1.amazonaws.com"},
     {"x-amz-date", "20190207T163512Z"},
     {"authorization",
@@ -39,14 +40,50 @@ defmodule E2eTest do
          short_date: fn _ -> "20190207" end
        ]}
     ]) do
-      {:ok, result} = InvokeLambda.invoke(@function_name, @options)
+      {200, result} = InvokeLambda.invoke(@function_name, @options)
 
       assert_called(
         HTTPoison.post(@expected_invocation_url, @expected_body, @expected_invoke_headers)
       )
 
-      assert result.body == "Hello world!"
-      assert result.status_code == 200, result.body
+      assert result == %{"hello" => "world"}
+    end
+  end
+
+  test "invokes a lambda with a payload" do
+    with_mocks([
+      {HTTPoison, [],
+       [
+         get!: fn @expected_meta_data_url -> TestHelper.expected_meta_data_response() end,
+         post: fn _, _, _ -> @invocation_result end
+       ]},
+      {Crypto, [],
+       [
+         hmac: fn _, _ -> "hmac" end,
+         sha256: fn _ -> "sha256" end,
+         hex: fn _ -> "hex" end
+       ]},
+      {Utils, [],
+       [
+         date_in_iso8601: fn _ -> "20190207T163512Z" end,
+         short_date: fn _ -> "20190207" end
+       ]}
+    ]) do
+      {200, result} =
+        InvokeLambda.invoke(@function_name, %{
+          role: @role,
+          function_payload: %{query: "I want the title please"}
+        })
+
+      assert_called(
+        HTTPoison.post(
+          @expected_invocation_url,
+          ~s({"query":"I want the title please"}),
+          @expected_invoke_headers
+        )
+      )
+
+      assert result == %{"hello" => "world"}
     end
   end
 end
