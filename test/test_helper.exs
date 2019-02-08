@@ -30,4 +30,6 @@ defmodule TestHelper do
     do: "https://lambda.eu-west-1.amazonaws.com/2015-03-31/functions/#{function_name}/invocations"
 
   def example_invocation_result, do: {:ok, %{body: "Hello world!", status_code: 200}}
+
+  def default_meta_data_host, do: "http://169.254.169.254"
 end

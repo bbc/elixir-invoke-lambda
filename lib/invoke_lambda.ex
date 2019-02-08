@@ -14,7 +14,12 @@ defmodule InvokeLambda do
   end
 
   def build_params(function_name, options) do
-    %{region: "eu-west-1", function_name: function_name, service: "lambda"}
+    %{
+      region: "eu-west-1",
+      function_name: function_name,
+      service: "lambda",
+      meta_data_host: "http://169.254.169.254"
+    }
     |> Map.merge(options)
     |> put_credentials
     |> put_date
@@ -41,7 +46,7 @@ defmodule InvokeLambda do
   defp put_headers(params), do: Map.put(params, :headers, build_headers(params))
 
   defp put_credentials(params) do
-    credentials = CredentialStore.retrieve_for_role(params.role)
+    credentials = CredentialStore.retrieve_using_role(params)
     Map.put(params, :credentials, credentials)
   end
 
