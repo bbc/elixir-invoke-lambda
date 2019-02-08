@@ -8,9 +8,14 @@ defmodule InvokeLambda do
 
     HTTPoison.post(
       params.invoke_lambda_url,
-      post_body(),
+      params.function_payload,
       params.headers
     )
+    |> format_invocation_response()
+  end
+
+  def format_invocation_response({_, function_response}) do
+    {function_response.status_code, Poison.decode!(function_response.body)}
   end
 
   def build_params(function_name, options) do
@@ -18,18 +23,25 @@ defmodule InvokeLambda do
       region: "eu-west-1",
       function_name: function_name,
       service: "lambda",
-      meta_data_host: "http://169.254.169.254"
+      meta_data_host: "http://169.254.169.254",
+      function_payload: %{}
     }
     |> Map.merge(options)
     |> put_credentials
     |> put_date
-    |> put_invoke_lambda_url
+    |> put_invoke_function_url
+    |> encode_function_payload
     |> put_headers
   end
 
-  def post_body, do: ""
+  def encode_function_payload(params) do
+    params
+    |> Map.update!(:function_payload, fn current_value ->
+      Poison.encode!(current_value)
+    end)
+  end
 
-  def put_invoke_lambda_url(params) do
+  def put_invoke_function_url(params) do
     Map.put(
       params,
       :invoke_lambda_url,
@@ -60,6 +72,7 @@ defmodule InvokeLambda do
     parsed_uri = URI.parse(params.invoke_lambda_url)
 
     [
+      {"content-type", "application/json"},
       {"host", parsed_uri.host},
       {"x-amz-date", Utils.date_in_iso8601(params.date)}
     ]
