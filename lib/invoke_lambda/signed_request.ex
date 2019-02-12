@@ -24,14 +24,15 @@ defmodule InvokeLambda.SignedRequest do
     HTTPoison.post(
       params.url,
       params.body,
-      params.headers
+      params.headers,
+      follow_redirect: true
     )
     |> format_response
   end
 
   defp put_url(%{service: :sts} = params) do
     params
-    |> Map.put(:url, "https://sts.#{params.region}.amazonaws.com")
+    |> Map.put(:url, "https://sts.#{params.region}.amazonaws.com/")
   end
 
   defp put_url(%{service: :lambda} = params) do
