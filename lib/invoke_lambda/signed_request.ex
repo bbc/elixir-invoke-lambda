@@ -18,7 +18,7 @@ defmodule InvokeLambda.SignedRequest do
       |> encode_signed_request_payload
       |> put_headers
 
-    IO.puts "Signed request logging:"
+    IO.puts "SignedRequest.send/1 params:"
     IO.inspect params
 
     HTTPoison.post(
@@ -45,6 +45,8 @@ defmodule InvokeLambda.SignedRequest do
   end
 
   defp format_response({_, request_response}) do
+    IO.puts "format_response:"
+    IO.inspect request_response
     {request_response.status_code, Poison.decode!(request_response.body)}
   end
 
