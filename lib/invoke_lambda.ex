@@ -9,6 +9,9 @@ defmodule InvokeLambda do
   } = options) do
     params = build_params(function_name, options)
 
+    IO.puts "InvokeLambda.invoke/2, params:"
+    IO.inspect params
+
     params
     |> instance_credentials
     |> assume_role

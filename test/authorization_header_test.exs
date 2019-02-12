@@ -44,7 +44,7 @@ defmodule AuthorizationHeaderTest do
 
     params = %{
       url: "https://example.com/",
-      service: "lambda",
+      service: :lambda,
       body: "{}"
     }
 
@@ -101,7 +101,7 @@ defmodule AuthorizationHeaderTest do
       lambda_role_arn: @lambda_role_arn,
       date: date,
       region: "eu-west-1",
-      service: "lambda",
+      service: :lambda,
       body: "{}"
     }
 
