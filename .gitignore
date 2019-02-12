@@ -23,3 +23,5 @@ erl_crash.dump
 invoke_lambda-*.tar
 
 .elixir_ls
+
+*.secret_config.exs

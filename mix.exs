@@ -21,11 +21,13 @@ defmodule InvokeLambda.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:ex_aws, "~> 2.0"},
+      {:ex_aws_sts, "~> 2.0.0"},
+      {:ex_aws_lambda, "~> 2.0"},
       {:httpoison, "~> 1.4"},
       {:mock, "~> 0.3.0", only: :test},
-      {:poison, "~> 3.1"}
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
+      {:poison, "~> 3.1"},
+      {:sweet_xml, "~> 0.6"}
     ]
   end
 end
