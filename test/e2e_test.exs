@@ -15,7 +15,11 @@ defmodule E2eTest do
   @lambda_role_arn TestHelper.example_lambda_role_arn()
   @instance_role TestHelper.example_instance_role_name()
   @expected_meta_data_url TestHelper.expected_meta_data_url(@instance_role)
-  @options %{lambda_role_arn: @lambda_role_arn, instance_role_name: @instance_role, function_payload: %{query: "I want the title please"}}
+  @options %{
+    lambda_role_arn: @lambda_role_arn,
+    instance_role_name: @instance_role,
+    function_payload: %{query: "I want the title please"}
+  }
 
   @expected_invoke_headers [
     {"content-type", "application/json"},
@@ -41,8 +45,8 @@ defmodule E2eTest do
        [
          get!: fn @expected_meta_data_url -> TestHelper.expected_meta_data_response() end,
          post: fn
-           @expected_sts_url, _, _ -> @expected_sts_response
-           @expected_invocation_url, _, _ -> @invocation_result
+           @expected_sts_url, _, _, _ -> @expected_sts_response
+           @expected_invocation_url, _, _, _ -> @invocation_result
          end
        ]},
       {Crypto, [],
@@ -63,11 +67,17 @@ defmodule E2eTest do
         HTTPoison.post(
           @expected_invocation_url,
           @expected_invocation_body,
-          @expected_invoke_headers
+          @expected_invoke_headers,
+          follow_redirect: true
         )
       )
 
-      assert_called(HTTPoison.post(@expected_sts_url, @expected_sts_body, @expected_sts_headers))
+      assert_called(
+        HTTPoison.post(@expected_sts_url, @expected_sts_body, @expected_sts_headers,
+          follow_redirect: true
+        )
+      )
+
       assert_called(HTTPoison.get!(@expected_meta_data_url))
 
       assert result == %{"hello" => "world"}
