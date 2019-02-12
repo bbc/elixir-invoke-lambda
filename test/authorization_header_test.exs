@@ -4,7 +4,7 @@ defmodule AuthorizationHeaderTest do
   use ExUnit.Case
 
   @credentials TestHelper.example_credentials()
-  @role TestHelper.example_role_name()
+  @lambda_role_arn TestHelper.example_lambda_role_arn()
 
   def example_headers do
     [
@@ -43,9 +43,9 @@ defmodule AuthorizationHeaderTest do
       )
 
     params = %{
-      invoke_lambda_url: "https://example.com/",
+      url: "https://example.com/",
       service: "lambda",
-      function_payload: "{}"
+      body: "{}"
     }
 
     actual = AuthorizationHeader.canonical_request(params, example_headers())
@@ -69,8 +69,8 @@ defmodule AuthorizationHeaderTest do
       date: date,
       region: "eu-west-1",
       service: "lambda",
-      function_payload: "{}",
-      invoke_lambda_url:
+      body: "{}",
+      url:
         "https://lambda.eu-west-1.amazonaws.com/2015-03-31/functions/ingress-hello-world/invocations"
     }
 
@@ -98,11 +98,11 @@ defmodule AuthorizationHeaderTest do
 
     params = %{
       credentials: @credentials,
-      role: @role,
+      lambda_role_arn: @lambda_role_arn,
       date: date,
       region: "eu-west-1",
       service: "lambda",
-      function_payload: "{}"
+      body: "{}"
     }
 
     expected =

@@ -1,87 +1,64 @@
 defmodule InvokeLambda do
-  alias InvokeLambda.{AuthorizationHeader, Utils, CredentialStore}
+  alias InvokeLambda.{AuthorizationHeader, Utils, CredentialStore, SignedRequest}
 
   @aws_endpoint_version "2015-03-31"
 
-  def invoke(function_name, %{role: _} = options) do
+  def invoke(function_name, %{
+    lambda_role_arn: _,
+    instance_role_name: _,
+  } = options) do
     params = build_params(function_name, options)
 
-    HTTPoison.post(
-      params.invoke_lambda_url,
-      params.function_payload,
-      params.headers
-    )
-    |> format_invocation_response()
+    params
+    |> instance_credentials
+    |> assume_role
+    |> invoke_lambda
+
   end
 
-  def format_invocation_response({_, function_response}) do
-    {function_response.status_code, Poison.decode!(function_response.body)}
+  defp assume_role(params) do
+    {200, lambda_credentials} = SignedRequest.send(%{
+      service: :sts,
+      region: params.region,
+      credentials: params.instance_credentials,
+      body: %{
+        "RoleArn" => params.lambda_role_arn,
+        "RoleSessionName" => "lambda-access",
+        "Action": "AssumeRole",
+        "Version": "2011-06-15",
+      }
+    })
+
+    params
+    |> Map.put(:lambda_credentials, %{
+      aws_access_key: lambda_credentials["AccessKeyId"],
+      aws_secret_key: lambda_credentials["SecretAccessKey"],
+      aws_token: lambda_credentials["Token"]
+    })
+  end
+
+  defp invoke_lambda(params) do
+    SignedRequest.send(%{
+      function_name: params.function_name,
+      region: params.region,
+      credentials: params.lambda_credentials,
+      service: :lambda,
+      body: params.function_payload
+    })
   end
 
   def build_params(function_name, options) do
     %{
       region: "eu-west-1",
       function_name: function_name,
-      service: "lambda",
       meta_data_host: "http://169.254.169.254",
       function_payload: %{}
     }
     |> Map.merge(options)
-    |> put_credentials
-    |> put_date
-    |> put_invoke_function_url
-    |> encode_function_payload
-    |> put_headers
   end
 
-  def encode_function_payload(params) do
-    %{params | function_payload: Poison.encode!(params.function_payload) }
-  end
-
-  def put_invoke_function_url(params) do
-    Map.put(
-      params,
-      :invoke_lambda_url,
-      URI.encode(
-        "https://lambda.#{params.region}.amazonaws.com/#{@aws_endpoint_version}/functions/#{
-          params.function_name
-        }/invocations"
-      )
-    )
-  end
-
-  defp put_date(params), do: Map.put(params, :date, DateTime.utc_now())
-
-  defp put_headers(params), do: Map.put(params, :headers, build_headers(params))
-
-  defp put_credentials(params) do
-    credentials = CredentialStore.retrieve_using_role(params)
-    Map.put(params, :credentials, credentials)
-  end
-
-  defp build_headers(params) do
-    params
-    |> build_base_headers
-    |> add_auth_headers(params)
-  end
-
-  defp build_base_headers(params) do
-    parsed_uri = URI.parse(params.invoke_lambda_url)
-
-    [
-      {"content-type", "application/json"},
-      {"host", parsed_uri.host},
-      {"x-amz-date", Utils.date_in_iso8601(params.date)}
-    ]
-  end
-
-  defp add_auth_headers(base_headers, params) do
-    authorization = AuthorizationHeader.build(params, base_headers)
-
-    base_headers ++
-      [
-        {"authorization", authorization},
-        {"x-amz-security-token", params.credentials.aws_token}
-      ]
+  defp instance_credentials(params) do
+    credentials = CredentialStore.retrieve_using_instance_role(params)
+    Map.put(params, :instance_credentials, credentials)
   end
 end
