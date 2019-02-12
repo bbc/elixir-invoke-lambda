@@ -33,7 +33,7 @@ defmodule InvokeLambda.AuthorizationHeader do
   end
 
   defp content_sha256(params) do
-    params.function_payload |> Crypto.sha256() |> Crypto.hex()
+    params.body |> Crypto.sha256() |> Crypto.hex()
   end
 
   defp signature(params, string_to_sign) do
@@ -52,7 +52,7 @@ defmodule InvokeLambda.AuthorizationHeader do
   end
 
   def canonical_request(params, other_headers) do
-    parsed_uri = URI.parse(params.invoke_lambda_url)
+    parsed_uri = URI.parse(params.url)
 
     [
       "POST",

@@ -4,15 +4,15 @@ defmodule CredentialStoreTest do
 
   alias InvokeLambda.CredentialStore
 
-  @role TestHelper.example_role_name()
+  @instance_role TestHelper.example_instance_role_name()
   @meta_data_host TestHelper.default_meta_data_host()
 
-  test "makes a request for the credentials when given a role" do
+  test "makes a request for the credentials when given a instance_role" do
     with_mocks([
       {HTTPoison, [], [get!: fn _ -> TestHelper.expected_meta_data_response() end]}
     ]) do
       result =
-        CredentialStore.retrieve_using_role(%{role: @role, meta_data_host: @meta_data_host})
+        CredentialStore.retrieve_using_instance_role(%{instance_role_name: @instance_role, meta_data_host: @meta_data_host})
 
       expected_result = %{
         aws_access_key: "aws-access-key",
@@ -20,7 +20,7 @@ defmodule CredentialStoreTest do
         aws_token: "aws-token"
       }
 
-      assert_called(HTTPoison.get!(TestHelper.expected_meta_data_url(@role)))
+      assert_called(HTTPoison.get!(TestHelper.expected_meta_data_url(@instance_role)))
       assert result == expected_result
     end
   end
