@@ -18,6 +18,9 @@ defmodule InvokeLambda.SignedRequest do
       |> encode_signed_request_payload
       |> put_headers
 
+    IO.puts "Signed request logging:"
+    IO.inspect params
+
     HTTPoison.post(
       params.url,
       params.body,

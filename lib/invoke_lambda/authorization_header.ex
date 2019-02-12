@@ -47,7 +47,7 @@ defmodule InvokeLambda.AuthorizationHeader do
     ("AWS4" <> params.credentials.aws_secret_key)
     |> Crypto.hmac(Utils.short_date(params.date))
     |> Crypto.hmac(params.region)
-    |> Crypto.hmac(params.service)
+    |> Crypto.hmac(Atom.to_string(params.service))
     |> Crypto.hmac("aws4_request")
   end
 
