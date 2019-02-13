@@ -23,8 +23,7 @@ defmodule InvokeLambda.MixProject do
     [
       {:httpoison, "~> 1.4"},
       {:mock, "~> 0.3.0", only: :test},
-      {:poison, "~> 3.1"},
-      {:sweet_xml, "~> 0.6"}
+      {:poison, "~> 3.1"}
     ]
   end
 end

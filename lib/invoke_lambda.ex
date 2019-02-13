@@ -20,6 +20,9 @@ defmodule InvokeLambda do
   end
 
   defp assume_role(params) do
+    IO.puts "assuming role"
+    IO.inspect params
+
     {200, lambda_credentials} =
     SignedRequest.send(%{
       lambda_role_arn: params.lambda_role_arn,
@@ -38,6 +41,8 @@ defmodule InvokeLambda do
   end
 
   defp invoke_lambda(params) do
+    IO.puts "invoking lambda"
+    IO.inspect params
     SignedRequest.send(%{
       function_name: params.function_name,
       region: params.region,
@@ -58,6 +63,9 @@ defmodule InvokeLambda do
   end
 
   defp instance_credentials(params) do
+    IO.puts "fetching instance credentials"
+    IO.inspect params
+
     credentials = CredentialStore.retrieve_using_instance_role(params)
     Map.put(params, :instance_credentials, credentials)
   end
