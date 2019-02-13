@@ -13,6 +13,7 @@ defmodule InvokeLambda.SignedRequest do
     params =
       options
       |> put_url
+      |> put_region
       |> encode_url
       |> put_date
       |> encode_signed_request_payload
@@ -21,15 +22,21 @@ defmodule InvokeLambda.SignedRequest do
     HTTPoison.post(
       params.url,
       params.body,
-      params.headers,
-      follow_redirect: true
+      params.headers
     )
     |> format_response
   end
 
+  defp put_region(%{service: :sts} = params) do
+    params
+    |> Map.put(:region, "us-east-1")
+  end
+
+  defp put_region(%{service: :lambda} = params), do: params
+
   defp put_url(%{service: :sts} = params) do
     params
-    |> Map.put(:url, "https://sts.#{params.region}.amazonaws.com/")
+    |> Map.put(:url, "https://sts.amazonaws.com/")
   end
 
   defp put_url(%{service: :lambda} = params) do
@@ -43,8 +50,6 @@ defmodule InvokeLambda.SignedRequest do
   end
 
   defp format_response({_, request_response}) do
-    IO.puts "format_response:"
-    IO.inspect request_response
     {request_response.status_code, Poison.decode!(request_response.body)}
   end
 
@@ -53,7 +58,20 @@ defmodule InvokeLambda.SignedRequest do
     |> Map.put(:url, URI.encode(params.url))
   end
 
-  def encode_signed_request_payload(params) do
+  def encode_signed_request_payload(%{service: :sts} = params) do
+
+    body = [
+      "Version=2011-06-15",
+      "RoleSessionName=lambda-access",
+      "RoleArn=#{params.lambda_role_arn}",
+      "Action=AssumeRole"
+    ] |> Enum.join("&")
+
+    params
+    |> Map.put(:body, body)
+  end
+
+  def encode_signed_request_payload(%{service: :lambda} = params) do
     params
     |> Map.put(:body, Poison.encode!(params.body))
   end
@@ -69,7 +87,20 @@ defmodule InvokeLambda.SignedRequest do
     |> add_auth_headers(params)
   end
 
-  defp build_base_headers(params) do
+
+  defp build_base_headers(%{service: :sts} = params) do
+    parsed_uri = URI.parse(params.url)
+
+    [
+      {"accept", "application/json"},
+      {"content-type", "application/x-www-form-urlencoded; charset=utf-8"},
+      {"content-length", byte_size(params.body)},
+      {"host", parsed_uri.host},
+      {"x-amz-date", Utils.date_in_iso8601(params.date)}
+    ]
+  end
+
+  defp build_base_headers(%{service: :lambda} = params) do
     parsed_uri = URI.parse(params.url)
 
     [
