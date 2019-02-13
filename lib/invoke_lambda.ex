@@ -10,9 +10,6 @@ defmodule InvokeLambda do
       ) do
     params = build_params(function_name, options)
 
-    IO.puts("InvokeLambda.invoke/2, params:")
-    IO.inspect(params)
-
     params
     |> instance_credentials
     |> assume_role
@@ -20,9 +17,6 @@ defmodule InvokeLambda do
   end
 
   defp assume_role(params) do
-    IO.puts "assuming role"
-    IO.inspect params
-
     {200, lambda_credentials} =
     SignedRequest.send(%{
       lambda_role_arn: params.lambda_role_arn,
@@ -34,15 +28,13 @@ defmodule InvokeLambda do
 
     params
     |> Map.put(:lambda_credentials, %{
-      aws_access_key: lambda_credentials["AccessKeyId"],
-      aws_secret_key: lambda_credentials["SecretAccessKey"],
-      aws_token: lambda_credentials["Token"]
+      aws_access_key: lambda_credentials["AssumeRoleResponse"]["AssumeRoleResult"]["Credentials"]["AccessKeyId"],
+      aws_secret_key: lambda_credentials["AssumeRoleResponse"]["AssumeRoleResult"]["Credentials"]["SecretAccessKey"],
+      aws_token: lambda_credentials["AssumeRoleResponse"]["AssumeRoleResult"]["Credentials"]["SessionToken"]
     })
   end
 
   defp invoke_lambda(params) do
-    IO.puts "invoking lambda"
-    IO.inspect params
     SignedRequest.send(%{
       function_name: params.function_name,
       region: params.region,
@@ -63,9 +55,6 @@ defmodule InvokeLambda do
   end
 
   defp instance_credentials(params) do
-    IO.puts "fetching instance credentials"
-    IO.inspect params
-
     credentials = CredentialStore.retrieve_using_instance_role(params)
     Map.put(params, :instance_credentials, credentials)
   end

@@ -10,10 +10,6 @@ defmodule InvokeLambda.SignedRequest do
           credentials: _
         } = options
       ) do
-
-    IO.puts "SignedRequest.send/1 options:"
-    IO.inspect options
-
     params =
       options
       |> put_url
@@ -22,9 +18,6 @@ defmodule InvokeLambda.SignedRequest do
       |> put_date
       |> encode_signed_request_payload
       |> put_headers
-
-    IO.puts "SignedRequest.send/1 params:"
-    IO.inspect params
 
     HTTPoison.post(
       params.url,
