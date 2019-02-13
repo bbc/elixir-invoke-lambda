@@ -48,7 +48,7 @@ defmodule TestHelper do
     do: "https://lambda.eu-west-1.amazonaws.com/2015-03-31/functions/#{function_name}/invocations"
 
   def expected_sts_url(),
-    do: "https://sts.eu-west-1.amazonaws.com/"
+    do: "https://sts.amazonaws.com/"
 
 
   def example_invocation_result, do: {:ok, %{body: ~s({"hello": "world"}), status_code: 200}}

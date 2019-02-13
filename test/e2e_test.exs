@@ -11,7 +11,7 @@ defmodule E2eTest do
   @expected_sts_url TestHelper.expected_sts_url()
   @expected_sts_response TestHelper.expected_sts_response()
   @expected_invocation_body "{\"query\":\"I want the title please\"}"
-  @expected_sts_body "{\"RoleSessionName\":\"lambda-access\",\"RoleArn\":\"lambda_role-to-invoke-lambda-with\",\"Version\":\"2011-06-15\",\"Action\":\"AssumeRole\"}"
+  @expected_sts_body "Version=2011-06-15&RoleSessionName=lambda-access&RoleArn=lambda_role-to-invoke-lambda-with&Action=AssumeRole"
   @lambda_role_arn TestHelper.example_lambda_role_arn()
   @instance_role TestHelper.example_instance_role_name()
   @expected_meta_data_url TestHelper.expected_meta_data_url(@instance_role)
@@ -31,11 +31,13 @@ defmodule E2eTest do
   ]
 
   @expected_sts_headers [
-    {"content-type", "application/json"},
-    {"host", "sts.eu-west-1.amazonaws.com"},
+    {"accept", "application/json"},
+    {"content-type", "application/x-www-form-urlencoded; charset=utf-8"},
+    {"content-length", 108},
+    {"host", "sts.amazonaws.com"},
     {"x-amz-date", "20190207T163512Z"},
     {"authorization",
-     "AWS4-HMAC-SHA256 Credential=aws-access-key/20190207/eu-west-1/sts/aws4_request, SignedHeaders=host;x-amz-date, Signature=hex"},
+     "AWS4-HMAC-SHA256 Credential=aws-access-key/20190207/us-east-1/sts/aws4_request, SignedHeaders=host;x-amz-date, Signature=hex"},
     {"x-amz-security-token", "aws-token"}
   ]
 
@@ -45,8 +47,8 @@ defmodule E2eTest do
        [
          get!: fn @expected_meta_data_url -> TestHelper.expected_meta_data_response() end,
          post: fn
-           @expected_sts_url, _, _, _ -> @expected_sts_response
-           @expected_invocation_url, _, _, _ -> @invocation_result
+           @expected_sts_url, _, _ -> @expected_sts_response
+           @expected_invocation_url, _, _ -> @invocation_result
          end
        ]},
       {Crypto, [],
@@ -67,16 +69,11 @@ defmodule E2eTest do
         HTTPoison.post(
           @expected_invocation_url,
           @expected_invocation_body,
-          @expected_invoke_headers,
-          follow_redirect: true
+          @expected_invoke_headers
         )
       )
 
-      assert_called(
-        HTTPoison.post(@expected_sts_url, @expected_sts_body, @expected_sts_headers,
-          follow_redirect: true
-        )
-      )
+      assert_called(HTTPoison.post(@expected_sts_url, @expected_sts_body, @expected_sts_headers))
 
       assert_called(HTTPoison.get!(@expected_meta_data_url))
 
