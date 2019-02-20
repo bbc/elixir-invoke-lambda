@@ -19,12 +19,13 @@ defmodule LambdaTest do
      "AWS4-HMAC-SHA256 Credential=<aws-access-key>/20190207/eu-west-1/lambda/aws4_request, SignedHeaders=host;x-amz-date, Signature=997d9b9a97fd73b86986255e15ab88fcadeb5d5e3bcb0177c05b77f0f4f95436"},
     {"x-amz-security-token", "<aws-security-token>"}
   ]
+  @expected_timeouts [recv_timeout: 15000, timeout: 15000]
 
   test "send post to lambda" do
     with_mocks([
       {HTTPoison, [],
        [
-         post: fn _url, _body, _headers -> @expected_lambda_response end
+         post: fn _url, _body, _headers, _options -> @expected_lambda_response end
        ]},
       {Utils, [],
        [
@@ -52,7 +53,8 @@ defmodule LambdaTest do
         HTTPoison.post(
           @expected_lambda_url,
           @expected_lambda_body,
-          @expected_lambda_headers
+          @expected_lambda_headers,
+          @expected_timeouts
         )
       )
 

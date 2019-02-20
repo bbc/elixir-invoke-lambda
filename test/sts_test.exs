@@ -25,12 +25,13 @@ defmodule StsTest do
      "AWS4-HMAC-SHA256 Credential=<aws-access-key>/20190207/us-east-1/sts/aws4_request, SignedHeaders=host;x-amz-date, Signature=3c0bd50b6b469fc3f9d308aa2e34a89e190f9c0c50822053b0e415bafddde355"},
     {"x-amz-security-token", "<aws-security-token>"}
   ]
+  @expected_timeouts [recv_timeout: 15000, timeout: 15000]
 
   test "send post to sts" do
     with_mocks([
       {HTTPoison, [],
        [
-         post: fn _url, _body, _headers -> @expected_sts_response end
+         post: fn _url, _body, _headers, _options -> @expected_sts_response end
        ]},
       {Utils, [],
        [
@@ -56,7 +57,8 @@ defmodule StsTest do
         HTTPoison.post(
           @expected_sts_url,
           @expected_sts_body,
-          @expected_sts_headers
+          @expected_sts_headers,
+          @expected_timeouts
         )
       )
 
