@@ -22,7 +22,8 @@ defmodule InvokeLambda.SignedRequest do
     HTTPoison.post(
       params.url,
       params.body,
-      params.headers
+      params.headers,
+      [recv_timeout: 15000, timeout: 15000]
     )
     |> format_response
   end
